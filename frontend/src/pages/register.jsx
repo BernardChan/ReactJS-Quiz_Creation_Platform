@@ -20,9 +20,9 @@ const Register = () => {
         }
       });
       if (response.status === 200) {
-        history.push('/dashboard')
         response.json().then(result => {
           localStorage.setItem('token', result.token)
+          history.push('/dashboard')
         })
       } else {
         alert('Invalid input')
