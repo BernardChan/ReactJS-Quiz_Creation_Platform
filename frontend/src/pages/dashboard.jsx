@@ -1,7 +1,7 @@
-// import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import React, { useEffect } from 'react';
 import { useHistory } from 'react-router';
+import { Link } from 'react-router-dom';
 /* eslint-disable react/prop-types */
 
 const Dashboard = () => {
@@ -152,10 +152,15 @@ function DisplayQuiz ({ name, id, onClick }) {
     }
   }
 
+  const saveQuizName = () => {
+    localStorage.setItem('quizName', name);
+  }
   return (
     <div style = {questionBox}>
       <div>
-        <button> Edit </button>
+        <Link to = {`quiz/${id}`}>
+          <button onClick = {saveQuizName}> Edit </button>
+        </Link>
         <button onClick= {() => { onClick(); deleteQuiz() }} > Delete </button>
       </div>
       <p>Quiz Name: {name} + {id} </p>
@@ -163,8 +168,10 @@ function DisplayQuiz ({ name, id, onClick }) {
   )
 }
 
-DisplayQuiz.PropTypes = {
-  name: PropTypes.string
+DisplayQuiz.propTypes = {
+  name: PropTypes.string,
+  id: PropTypes.number,
+  onClick: PropTypes.func
 }
 
 /*
