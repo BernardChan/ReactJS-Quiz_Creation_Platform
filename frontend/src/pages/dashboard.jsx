@@ -2,17 +2,17 @@ import PropTypes from 'prop-types';
 import React, { useEffect } from 'react';
 import { useHistory } from 'react-router';
 import { Link } from 'react-router-dom';
-/* eslint-disable react/prop-types */
 
 const Dashboard = () => {
   const history = useHistory();
   const [quizDetails, setQuizDetails] = React.useState([]);
   const [name, setName] = React.useState('');
   const [deleted, setDeleted] = React.useState(false);
+  const token = localStorage.getItem('token')
 
+  // logout to login page
   const logOut = async event => {
     try {
-      const token = localStorage.getItem('token')
       event.preventDefault();
       const response = await fetch('http://localhost:5005/admin/auth/logout', {
         method: 'POST',
@@ -33,12 +33,11 @@ const Dashboard = () => {
     }
   }
 
+  // display the quizzes on the dashboard
   const viewQuizzes = async event => {
+    // reset setDeleted after a delete
     setDeleted(false);
     try {
-      const token = localStorage.getItem('token')
-      // event.preventDefault();
-      console.log(token)
       const response = await fetch('http://localhost:5005/admin/quiz', {
         method: 'GET',
         headers: {
@@ -58,19 +57,54 @@ const Dashboard = () => {
     }
   }
 
+  // update quizzies on dashboard and their details on first page load,
+  // when quizzes are added and when deleted
   useEffect(() => {
     viewQuizzes();
   }, [name]);
   useEffect(() => {
     viewQuizzes();
+    getQuizDetails()
+  }, []);
+  useEffect(() => {
+    viewQuizzes();
     setDeleted(false);
+    getQuizDetails()
   }, [deleted]);
 
+  const getQuizDetails = () => {
+    quizDetails.forEach(data => {
+      fetch(`http://localhost:5005/admin/quiz/${data.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token
+        }
+      }).then(response => {
+        if (response.status === 200) {
+          response.json().then(result => {
+            // set the number of questions and total time of quiz
+            const NumOfQuestions = result.questions.length
+            localStorage.setItem(`${data.id}`, NumOfQuestions)
+            let quizLength = 0;
+            const questions = result.questions
+            questions.forEach(q => {
+              quizLength += q.timeAllowed;
+              console.log(quizLength)
+            })
+            localStorage.setItem(`${data.id}time`, quizLength)
+          })
+        }
+      }).catch(error => {
+        console.log('Error: ', error);
+      })
+    });
+  }
+
   const newQuiz = async event => {
-    const token = localStorage.getItem('token')
-    console.log(name)
     try {
       event.preventDefault();
+      // body updates to match name textarea
       const body = { name }
       const response = await fetch('http://localhost:5005/admin/quiz/new', {
         body: JSON.stringify(body),
@@ -80,9 +114,7 @@ const Dashboard = () => {
           Authorization: 'Bearer ' + token
         }
       });
-      console.log(JSON.stringify(body))
       if (response.status === 200) {
-        console.log('successfully added')
         setName('')
         document.getElementById('newGameName').value = '';
       } else if (response.status === 400) {
@@ -98,11 +130,11 @@ const Dashboard = () => {
   return (
     <div>
       <div>
-        <button onClick = {logOut}>Log out</button>
+        <button id = "logOut" onClick = {logOut}>Log out</button>
       </div>
-      <div>
-        Welcome to Dashboard
-      </div>
+      <p>
+        Welcome to the Dashboard!
+      </p>
       <div>
         <input
           id = "newGameName"
@@ -110,12 +142,19 @@ const Dashboard = () => {
           onChange = {e => setName(e.target.value)}
           placeholder = "Enter Name of Game"
         />
-        <button onClick = {newQuiz}>Create Game</button>
+        <button onClick = {newQuiz} id = "newGame">Create Game</button>
       </div>
       <div>
         {
           quizDetails.map((data, id) => (
-            <DisplayQuiz onClick = {() => setDeleted(true)} key = {id} name = {data.name} id = {data.id}/>
+            <DisplayQuiz
+              onClick = {() => setDeleted(true)}
+              key = {id}
+              name = {data.name}
+              id = {data.id}
+              numOfQuestions = {localStorage.getItem(`${data.id}`)}
+              quizTime = {localStorage.getItem(`${data.id}time`)}
+            />
           ))
         }
       </div>
@@ -129,9 +168,12 @@ const questionBox = {
   border: '2px solid black'
 }
 
-function DisplayQuiz ({ name, id, onClick }) {
+// components
+
+function DisplayQuiz ({ name, id, onClick, numOfQuestions, quizTime }) {
+  const token = localStorage.getItem('token')
+  // each delete is specific to question ID
   const deleteQuiz = async event => {
-    const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5005/admin/quiz/${id}`, {
         method: 'DELETE',
@@ -152,6 +194,62 @@ function DisplayQuiz ({ name, id, onClick }) {
     }
   }
 
+  // starts the game and then fetches quiz data where session can be found
+  const startGame = async event => {
+    try {
+      event.preventDefault();
+      const response = await fetch(`http://localhost:5005/admin/quiz/${id}/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token
+        }
+      });
+      if (response.status === 200) {
+        console.log(response)
+        fetch(`http://localhost:5005/admin/quiz/${id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Token ' + token
+          },
+        }).then(response => {
+          if (response.status === 200) {
+            response.json().then(data => {
+              console.log(data)
+            })
+          }
+        }).catch(error => {
+          console.log('Error: ', error);
+        })
+      } else {
+        alert('Invalid token')
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  const endGame = async event => {
+    try {
+      event.preventDefault();
+      const response = await fetch(`http://localhost:5005/admin/quiz/${id}/end`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token
+        }
+      });
+      if (response.status === 200) {
+        console.log(response)
+      } else {
+        alert('Invalid token')
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
   const saveQuizName = () => {
     localStorage.setItem('quizName', name);
   }
@@ -163,7 +261,15 @@ function DisplayQuiz ({ name, id, onClick }) {
         </Link>
         <button onClick= {() => { onClick(); deleteQuiz() }} > Delete </button>
       </div>
-      <p>Quiz Name: {name} + {id} </p>
+      <p id = "quiz">Quiz Name: {name}</p>
+      <div>Number of Questions: {numOfQuestions}</div>
+      <div>Total Time: {quizTime}</div>
+      <div>
+        <button id = "start" onClick = {startGame} >Start Game</button>
+        <Link to = {`quiz/${id}/end`}>
+          <button id = "end" onClick = {endGame}>End Game</button>
+        </Link>
+      </div>
     </div>
   )
 }
@@ -171,22 +277,9 @@ function DisplayQuiz ({ name, id, onClick }) {
 DisplayQuiz.propTypes = {
   name: PropTypes.string,
   id: PropTypes.number,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  numOfQuestions: PropTypes.string,
+  quizTime: PropTypes.string
 }
-
-/*
-const testQuiz =
-[{ id: 1, name: 'A' },
-  { id: 2, name: 'B' }]
-
-function QuizDiv (id, name) {
-  return (
-    <div>
-      <p>{id}</p>
-      <p>{name}</p>
-    </div>
-  )
-}
-*/
 
 export default Dashboard;

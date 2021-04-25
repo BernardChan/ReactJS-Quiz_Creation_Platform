@@ -19,6 +19,7 @@ const Login = () => {
         }
       });
       if (response.status === 200) {
+        // set the token and go to dashboard
         response.json().then(result => {
           localStorage.setItem('token', result.token)
           history.push('/dashboard')
@@ -55,11 +56,11 @@ const Login = () => {
             />
         </div>
         <Link to="/dashboard">
-          <button onClick={submit} >Submit</button>
+          <button id = "submit" onClick={submit} >Submit</button>
         </Link>
       </form>
         <Link to="/register">
-          <button>Register</button>
+          <button id = "register">Register</button>
         </Link>
     </div>
   )

@@ -1,18 +1,16 @@
 import PropTypes from 'prop-types';
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-/* eslint-disable react/prop-types */
 
 const Quiz = () => {
   const param = useParams();
-  // const history = useHistory();
   const [quizDetails, setQuizDetails] = React.useState({});
   const [quizQuestions, setQuizQuestions] = React.useState([]);
   const [questionTitle, setQuestionTitle] = React.useState('')
+  const token = localStorage.getItem('token')
 
   const getQuizDetails = async event => {
     try {
-      const token = localStorage.getItem('token')
       const quizID = param.id;
       const response = await fetch(`http://localhost:5005/admin/quiz/${quizID}`, {
         method: 'GET',
@@ -23,14 +21,9 @@ const Quiz = () => {
       });
       if (response.status === 200) {
         response.json().then(result => {
-          /* / debug
-          console.log(result)
-          result.questions = ['mums']
-          console.log(result)
-          */
+          // update use states with quiz metadata and questions
           setQuizDetails(result);
           setQuizQuestions(result.questions);
-          console.log(quizDetails)
         })
       } else {
         alert('Invalid token')
@@ -42,7 +35,6 @@ const Quiz = () => {
 
   const updateQuiz = async event => {
     try {
-      const token = localStorage.getItem('token')
       const quizID = param.id;
       const body = quizDetails
       const response = await fetch(`http://localhost:5005/admin/quiz/${quizID}`, {
@@ -54,12 +46,7 @@ const Quiz = () => {
         }
       });
       if (response.status === 200) {
-        response.json().then(result => {
-          console.log('success')
-          console.log(quizDetails)
-          console.log(body)
-          console.log(JSON.stringify(body))
-        })
+        console.log('success')
       } else {
         alert('Invalid token')
       }
@@ -69,51 +56,55 @@ const Quiz = () => {
   }
 
   const addQuestions = () => {
-    console.log(questionTitle)
+    // custom question body
     const newQuestionBody = {
-      title: questionTitle
+      title: questionTitle,
+      questionType: 'single',
+      timeAllowed: 0,
+      pointsWorth: 0,
+      options: []
     }
-    console.log(newQuestionBody)
     // change the quiz details body to include the new question
     const newQuizQuestions = [...quizQuestions];
     newQuizQuestions.push(newQuestionBody);
-    console.log(newQuizQuestions)
     setQuizQuestions(newQuizQuestions);
-    console.log(quizQuestions)
     quizDetails.questions = newQuizQuestions;
-    console.log(quizDetails)
     document.getElementById('newQuestion').value = ''
-    // updateQuiz()
   }
 
+  // remove question from quiz
   const removeQuestion = (index) => {
     const newQuizQuestions = [...quizQuestions];
     newQuizQuestions.splice(index, 1);
     setQuizQuestions(newQuizQuestions);
     quizDetails.questions = newQuizQuestions;
-    // updateQuiz()
   }
 
+  // update quiz when the questions change
   useEffect(() => {
     updateQuiz();
+    localStorage.setItem(`${param.id}`, quizQuestions.length)
+    let quizLength = 0;
+    quizQuestions.forEach(q => {
+      quizLength += q.timeAllowed;
+    })
+    localStorage.setItem(`${param.id}time`, quizLength)
   }, [quizQuestions])
+
   useEffect(() => {
     getQuizDetails();
-    console.log(quizQuestions)
   }, []);
-  console.log(quizDetails)
 
   return (
     <div>
       <Link to = "/dashboard">
-        <button > Return to Dashboard </button>
+        <p>
+          <button> Return to Dashboard </button>
+        </p>
       </Link>
-      <div>
-        {quizDetails.name}
-      </div>
-      <div>
-        Questions
-      </div>
+      <p>
+        Quiz Name: {quizDetails.name}
+      </p>
       <div>
         <input
             id = "newQuestion"
@@ -132,6 +123,8 @@ const Quiz = () => {
               key = {id}
               onClick = {() => removeQuestion(quizQuestions.indexOf(data))}
               title = {data.title}
+              timeAllowed = {data.timeAllowed}
+              pointsWorth = {data.pointsWorth}
               index = {quizQuestions.indexOf(data) + 1}
               id = {param.id}
             />
@@ -149,7 +142,7 @@ const questionBox = {
   border: '2px solid black'
 }
 
-function Questions ({ title, index, onClick, id }) {
+function Questions ({ title, timeAllowed, pointsWorth, index, onClick, id }) {
   return (
     <div style = {questionBox}>
       <div>
@@ -158,14 +151,20 @@ function Questions ({ title, index, onClick, id }) {
         </Link>
         <button onClick = { onClick }> Delete </button>
       </div>
-      Question {index}: {title}
+      <div> Question {index}: {title} </div>
+      <div> Time Allowed: {timeAllowed} </div>
+      <div> Points: {pointsWorth} </div>
     </div>
   )
 }
 
 Questions.propTypes = {
   index: PropTypes.number,
-  title: PropTypes.string
+  title: PropTypes.string,
+  timeAllowed: PropTypes.number,
+  pointsWorth: PropTypes.number,
+  onClick: PropTypes.func,
+  id: PropTypes.string
 }
 
 export default Quiz;

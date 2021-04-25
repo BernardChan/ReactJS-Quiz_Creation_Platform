@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard'
 import Register from './pages/register'
 import Quiz from './pages/quiz'
 import Question from './pages/question'
+import End from './pages/end'
 
 function App () {
   return (
@@ -24,6 +25,9 @@ function App () {
           </Route>
           <Route exact path = "/quiz/:id/:qid">
             <Question />
+          </Route>
+          <Route exact path = "/quiz/:id/end">
+            <End />
           </Route>
           <Route exact path = "/register">
             <Register />

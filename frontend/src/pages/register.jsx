@@ -39,6 +39,7 @@ const Register = () => {
           Name:
         </label>
         <input
+          name="name"
           type="text"
           id="name"
           onChange = {e => setName(e.target.value)}
@@ -49,6 +50,7 @@ const Register = () => {
           Email:
         </label>
         <input
+          name="email"
           type="text"
           id="email"
           onChange = {e => setEmail(e.target.value)}
@@ -59,6 +61,7 @@ const Register = () => {
           Password:
         </label>
         <input
+          name="password"
           type="text"
           id="password"
           onChange = {e => setPassword(e.target.value)}
@@ -66,7 +69,7 @@ const Register = () => {
       </div>
       <div>
         <Link to="/dashboard">
-          <button onClick = {submit} >Submit</button>
+          <button id = "submit" onClick = {submit} type = "submit">Submit</button>
         </Link>
       </div>
       <div>
